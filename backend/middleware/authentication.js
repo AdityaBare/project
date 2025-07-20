@@ -1,8 +1,7 @@
 const { status } = require("http-status");
-const User = require('../model/UserModel');
+const User = require("../model/UserModel");
 const bcrypt = require("bcrypt");
-const crypto = require('crypto');
-
+const crypto = require("crypto");
 
 const signUp = async (req, res) => {
   const { username, mobile, password, email } = req.body;
@@ -16,8 +15,22 @@ const signUp = async (req, res) => {
 
   try {
     const hashPassword = await bcrypt.hash(password, 9);
-    const newUser = new User({ username, password: hashPassword, mobile, email });
+    const token = crypto.randomBytes(10).toString("hex");
+
+    const newUser = new User({
+      username,
+      password: hashPassword,
+      mobile,
+      email,
+      token,
+    });
     await newUser.save();
+    res.cookie("token", token, {
+      withCredentials: true,
+      httpOnly: true,
+      maxAge: 60 * 60 * 1000,
+      sameSite: "None",
+    });
 
     res
       .status(status.CREATED)
@@ -27,46 +40,44 @@ const signUp = async (req, res) => {
   }
 };
 
-const login = async (req,res)=>{
+const login = async (req, res) => {
+  if (!req.body) {
+    return res.status(status.BAD_REQUEST).json({ message: "Bad request" });
+  }
+  const { email, password } = req.body;
 
- if(!req.body){
-  return res.status(status.BAD_REQUEST).json({message:"Bad request"})
- }
-  const {email , password}=req.body;
+  try {
+    const existUser = await User.findOne({ email });
+   
 
+    if (!existUser) {
+      return res
+        .status(status.NOT_FOUND)
+        .json({ message: "Invalid email", success: false });
+    }
 
-  try{
-    
-  const existUser = await User.findOne({email});
-  console.log(email);
+    if (await bcrypt.compare(password, existUser.password)) {
+      const token = crypto.randomBytes(10).toString("hex");
+     await User.updateOne(
+        { email: email },
+        { $set: { token: token } }
+      );
+      res.cookie("token", token, {
+        withCredentials: true,
+        httpOnly: true,
+        maxAge: 60 * 60 * 1000,
+        sameSite: "None",
+      });
+      return res
+        .status(status.ACCEPTED)
+        .json({ message: "Login", success: true, token: token });
+    }
 
-  if(!existUser){
     return res
       .status(status.NOT_FOUND)
-      .json({message:"Invalid email" , success:false});
-  }
- 
-  if(bcrypt.compare(password , existUser.password)){
+      .json({ message: "Password is incorrect", success: false });
+  } catch (e) {
+  return res.status(status.INTERNAL_SERVER_ERROR).json({ message: "Something went wrong", error: e.message });}
+};
 
-    const token = crypto.randomBytes(10).toString('hex');
-     const userToken = await User.updateOne({email:email},{$set:{token:token}});
-     await userToken.save();
-     console.log("ok");
-
-    return res.status(status.CONTINUE).json({message:"Login", success:true,token:token})
-
-
-  }
-
-  return res.status(status.NOT_FOUND).json({message:"Password is incorrect", success:false})
-
-  }catch(e){
-
-  }
-
-
-  
-}
-
-
-module.exports = { signUp ,login};
+module.exports = { signUp, login };

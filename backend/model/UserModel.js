@@ -19,7 +19,7 @@ const userSchema = new mongoose.Schema({
     },
     token:{String},
     cart:[{
-        type:Schema.Types.ObjectId,
+        type:mongoose.Schema.Types.ObjectId,
         ref:'Listing'}
 
     ]
