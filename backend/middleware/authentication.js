@@ -1,6 +1,8 @@
 const { status } = require("http-status");
 const User = require('../model/UserModel');
 const bcrypt = require("bcrypt");
+const crypto = require('crypto');
+
 
 const signUp = async (req, res) => {
   const { username, mobile, password, email } = req.body;
@@ -25,5 +27,46 @@ const signUp = async (req, res) => {
   }
 };
 
+const login = async (req,res)=>{
 
-module.exports = { signUp };
+ if(!req.body){
+  return res.status(status.BAD_REQUEST).json({message:"Bad request"})
+ }
+  const {email , password}=req.body;
+
+
+  try{
+    
+  const existUser = await User.findOne({email});
+  console.log(email);
+
+  if(!existUser){
+    return res
+      .status(status.NOT_FOUND)
+      .json({message:"Invalid email" , success:false});
+  }
+ 
+  if(bcrypt.compare(password , existUser.password)){
+
+    const token = crypto.randomBytes(10).toString('hex');
+     const userToken = await User.updateOne({email:email},{$set:{token:token}});
+     await userToken.save();
+     console.log("ok");
+
+    return res.status(status.CONTINUE).json({message:"Login", success:true,token:token})
+
+
+  }
+
+  return res.status(status.NOT_FOUND).json({message:"Password is incorrect", success:false})
+
+  }catch(e){
+
+  }
+
+
+  
+}
+
+
+module.exports = { signUp ,login};
