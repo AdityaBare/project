@@ -17,7 +17,13 @@ const userSchema = new mongoose.Schema({
         type:String,
         required:true
     },
-    token:{String}
+    token:{String},
+    cart:[{
+        type:Schema.Types.ObjectId,
+        ref:'Listing'}
+
+    ]
+    
 })
 
 module.exports=mongoose.model("User",userSchema);
