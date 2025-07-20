@@ -16,7 +16,7 @@ app.use(cookieParser());
 
 
 
-app.use('/',userRoute);
+app.use('/user',userRoute);
 
 
 app.listen(8080,()=>{

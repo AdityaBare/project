@@ -48,7 +48,6 @@ const login = async (req, res) => {
 
   try {
     const existUser = await User.findOne({ email });
-   
 
     if (!existUser) {
       return res
@@ -58,10 +57,7 @@ const login = async (req, res) => {
 
     if (await bcrypt.compare(password, existUser.password)) {
       const token = crypto.randomBytes(10).toString("hex");
-     await User.updateOne(
-        { email: email },
-        { $set: { token: token } }
-      );
+      await User.updateOne({ email: email }, { $set: { token: token } });
       res.cookie("token", token, {
         withCredentials: true,
         httpOnly: true,
@@ -77,7 +73,26 @@ const login = async (req, res) => {
       .status(status.NOT_FOUND)
       .json({ message: "Password is incorrect", success: false });
   } catch (e) {
-  return res.status(status.INTERNAL_SERVER_ERROR).json({ message: "Something went wrong", error: e.message });}
+    return res
+      .status(status.INTERNAL_SERVER_ERROR)
+      .json({ message: "Something went wrong", error: e.message });
+  }
 };
 
-module.exports = { signUp, login };
+const logout = async (req, res) => {
+  try {
+    res.clearCookie("token", {
+      httpOnly: true,
+      secure: false,
+      sameSite: "None",
+    });
+  } catch (r) {
+    res
+      .status(status.INTERNAL_SERVER_ERROR)
+      .json({ message: "Error", success: false });
+  }
+
+  res.status(200).json({ message: "Logged out successfully" });
+};
+
+module.exports = { signUp, login, logout };
