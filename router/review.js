@@ -23,7 +23,7 @@ router.post('/products/:productId/reviews', isLoggedIn, async (req, res) => {
         });
 
         await review.save();
-        res.redirect(/products/${productId});
+        res.redirect(`/products/${productId}`);
     } catch (err) {
         res.status(400).send("Error saving review: " + err.message);
     }
